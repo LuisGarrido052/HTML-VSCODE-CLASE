@@ -8,7 +8,17 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="Css/main.css">
     <link rel="icon" href="Images/pokedex-3.ico" type="image/x-icon">
-   
+                <div id="dittoCard" style="background:var(--card);padding:14px;border-radius:12px;">
+                    <div style="display:flex;gap:10px;align-items:center">
+                        <img id="dittoImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/132.png" alt="Ditto" style="width:80px;height:80px;object-fit:contain">
+                        <div>
+                            <div id="dittoName" style="font-weight:700">Ditto</div>
+                            <div id="dittoInfo" style="color:var(--muted);font-size:13px">Tipo: Normal • Altura: 1 • Peso: 40</div>
+                                <div id="dittoAbilities" style="margin-top:6px;font-size:13px;color:var(--muted)"></div>
+                                <div id="dittoFlavor" style="margin-top:8px;font-size:13px;color:var(--muted)"></div>
+                        </div>
+                    </div>
+                </div>
 </head>
 <body>
     <header>
@@ -77,11 +87,7 @@
                     </div>
                 </div>
 
-                <div style="background:var(--card);padding:14px;border-radius:12px;text-align:center">
-                    <div style="font-weight:700;font-size:18px">API lista</div>
-                    <div style="color:var(--muted);margin-top:6px;font-size:13px">Integra PokeAPI para datos reales</div>
-                    <button style="margin-top:10px;padding:10px 12px;border-radius:10px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);cursor:pointer" onclick="alert('Integra PokeAPI para cargar datos reales')">Integrar API</button>
-                </div>
+                
             </aside>
         </section>
 
@@ -274,6 +280,51 @@
         // cargar al iniciar una lista parcial para la landpage y poblar la colección
         loadPokemons(150);
         fetchAndPopulateCollection('pikachu');
+
+        // --- Poblado de Ditto en la columna (usa https://pokeapi.co/api/v2/pokemon/ditto) ---
+        const dittoImg = document.getElementById('dittoImg');
+        const dittoName = document.getElementById('dittoName');
+        const dittoInfo = document.getElementById('dittoInfo');
+        const dittoAbilities = document.getElementById('dittoAbilities');
+        const dittoFlavor = document.getElementById('dittoFlavor');
+
+        async function fetchDitto(){
+            try{
+                const res = await fetch('https://pokeapi.co/api/v2/pokemon/ditto');
+                if(!res.ok) return;
+                const p = await res.json();
+                const img = (p.sprites && (p.sprites.other && p.sprites.other['official-artwork'] && p.sprites.other['official-artwork'].front_default)) || p.sprites.front_default || dittoImg.src;
+                dittoImg.src = img;
+                dittoImg.alt = p.name || 'Ditto';
+                dittoName.textContent = capitalize(p.name || 'Ditto');
+                const types = (p.types||[]).map(t=>capitalize(t.type.name)).join(', ') || 'Desconocido';
+                const heightM = ((p.height||0)/10).toFixed(1);
+                const weightKg = ((p.weight||0)/10).toFixed(1);
+                dittoInfo.textContent = `Tipo: ${types} • Altura: ${heightM} m • Peso: ${weightKg} kg`;
+                dittoAbilities.innerHTML = 'Habilidades: ' + (p.abilities||[]).map(a=>capitalize(a.ability.name)).join(', ');
+
+                // fetch species to get flavor text in Spanish
+                try{
+                    const sUrl = (p.species && p.species.url) ? p.species.url : 'https://pokeapi.co/api/v2/pokemon-species/ditto';
+                    const sres = await fetch(sUrl);
+                    if(sres.ok){
+                        const species = await sres.json();
+                        const entries = species.flavor_text_entries || [];
+                        let flavor = '';
+                        for(const e of entries){
+                            if(e.language && e.language.name === 'es') { flavor = e.flavor_text; break; }
+                        }
+                        if(!flavor && entries.length) flavor = entries[0].flavor_text || '';
+                        // clean whitespace and control chars
+                        flavor = (flavor || '').replace(/\f|\n/g,' ').replace(/\s+/g,' ').trim();
+                        dittoFlavor.textContent = flavor;
+                    }
+                }catch(se){ console.warn('species fetch', se); }
+
+            }catch(e){ console.warn('fetchDitto', e); }
+        }
+
+        fetchDitto();
     </script>
 </body>
 </html>
