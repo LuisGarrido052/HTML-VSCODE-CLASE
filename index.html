@@ -67,9 +67,14 @@
             </div>
 
             <aside style="display:flex;flex-direction:column;gap:14px">
-                <div style="background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:18px;border-radius:12px">
-                    <h3 style="margin:0 0 6px">Colección</h3>
-                    <p style="margin:0;color:var(--muted)">Muestra algunos Pokémon populares. Añade más cartas o conecta una API para cargar dinámicamente.</p>
+                <div id="collectionCard" style="background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:18px;border-radius:12px;display:flex;gap:12px;align-items:center">
+                    <img id="collectionImg" src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png" alt="Pikachu" style="width:120px;height:120px;object-fit:contain">
+                    <div style="flex:1">
+                        <h3 id="collectionName" style="margin:0 0 6px">Pikachu</h3>
+                        <div id="collectionTypes" style="margin-bottom:8px"><div class="type">Eléctrico</div></div>
+                        <p id="collectionDesc" style="margin:0;color:var(--muted);font-size:13px">Pikachu es un Pokémon de tipo eléctrico conocido por su energía y popularidad.</p>
+                        <div style="margin-top:8px"><button id="collectionRandom" style="padding:8px 10px;border-radius:8px;cursor:pointer">Aleatorio</button></div>
+                    </div>
                 </div>
 
                 <div style="background:var(--card);padding:14px;border-radius:12px;text-align:center">
@@ -232,8 +237,43 @@
         // limpiar también elimina resultados traídos por la API
         clearBtn.addEventListener('click', ()=>{ search.value=''; search.focus(); filter(''); document.querySelectorAll('.card[data-fetched="true"]').forEach(n=>n.remove()); });
 
-        // cargar al iniciar
+        // --- Sección Colección: mostrar Pokémon grande y descripción ---
+        const collectionImg = document.getElementById('collectionImg');
+        const collectionName = document.getElementById('collectionName');
+        const collectionTypes = document.getElementById('collectionTypes');
+        const collectionDesc = document.getElementById('collectionDesc');
+        const collectionRandomBtn = document.getElementById('collectionRandom');
+
+        function renderCollection(p){
+            if(!p) return;
+            const name = p.name || '';
+            const img = (p.sprites && (p.sprites.other && p.sprites.other['official-artwork'] && p.sprites.other['official-artwork'].front_default)) || p.sprites.front_default || collectionImg.src;
+            const types = (p.types || []).map(t=>capitalize(t.type.name));
+            collectionImg.src = img;
+            collectionImg.alt = name;
+            collectionName.textContent = capitalize(name);
+            collectionTypes.innerHTML = types.map(t=>`<div class="type">${t}</div>`).join('');
+            collectionDesc.textContent = `Altura ${p.height} • Peso ${p.weight} — Pokédex: ${p.id}`;
+        }
+
+        async function fetchAndPopulateCollection(q){
+            try{
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${q}`);
+                if(!res.ok) return;
+                const data = await res.json();
+                renderCollection(data);
+            }catch(e){ console.warn('collection fetch', e); }
+        }
+
+        collectionRandomBtn.addEventListener('click', ()=>{
+            const max = 1010;
+            const id = Math.floor(Math.random()*max)+1;
+            fetchAndPopulateCollection(id);
+        });
+
+        // cargar al iniciar una lista parcial para la landpage y poblar la colección
         loadPokemons(150);
+        fetchAndPopulateCollection('pikachu');
     </script>
 </body>
 </html>
