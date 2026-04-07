@@ -132,6 +132,43 @@
 
         // permite filtrar con Enter (útil si se integra backend)
         search.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); filter(search.value); }});
+
+        // --- Integración PokeAPI: cargar más Pokémon dinámicamente ---
+        const allGrid = document.getElementById('allGrid');
+
+        function capitalize(s){ return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+
+        async function loadPokemons(limit = 150){
+            try{
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${limit}`);
+                if(!res.ok) throw new Error('Error al cargar lista');
+                const data = await res.json();
+                data.results.forEach(r => {
+                    const url = r.url || '';
+                    const idMatch = url.match(/\/pokemon\/(\d+)\/$/);
+                    const id = idMatch ? idMatch[1] : '';
+                    const img = id ? `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png` : '';
+                    const name = r.name || '';
+
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.setAttribute('data-name', name);
+                    card.innerHTML = `
+                        <div class="imgwrap"><img src="${img}" alt="${name}"></div>
+                        <div class="name">${capitalize(name)}</div>
+                        <div class="types"><div class="type">Desconocido</div></div>
+                    `;
+                    allGrid.appendChild(card);
+                });
+                // actualizar referencia de contenedores para que la búsqueda filtre los nuevos items
+                if(!containers.includes(allGrid)) containers.push(allGrid);
+            }catch(err){
+                console.warn('PokeAPI error:', err);
+            }
+        }
+
+        // cargar al iniciar
+        loadPokemons(150);
     </script>
 </body>
 </html>
